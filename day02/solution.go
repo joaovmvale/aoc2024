@@ -9,6 +9,7 @@ import (
 
 const inputFile = "input.txt"
 
+// Parses the input file and creates a list of reports.
 func parseInputAndCreateReports(inputFile string) [][]int {
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -27,56 +28,60 @@ func parseInputAndCreateReports(inputFile string) [][]int {
 		}
 		reports = append(reports, report)
 	}
-
 	return reports
 }
 
-func checkIfReportIsSafe(report []int) (bool, int) {
+// Checks if a report is safe based on level differences.
+func isSafe(report []int) bool {
 	if len(report) < 2 {
-		return true, -1
+		return true
 	}
 
-	reportIsIncreasing := report[1] > report[0]
+	isIncreasing := true
+	isDecreasing := true
+
 	for i := 1; i < len(report); i++ {
 		difference := report[i] - report[i-1]
-		if difference == 0 || difference > 3 || difference < -3 {
-			return false, i
+		if difference <= 0 || difference > 3 {
+			isIncreasing = false
 		}
-		if (reportIsIncreasing && report[i] < report[i-1]) || (!reportIsIncreasing && report[i] > report[i-1]) {
-			return false, i
+		if difference >= 0 || difference < -3 {
+			isDecreasing = false
 		}
 	}
-	return true, -1
+
+	return isIncreasing || isDecreasing
 }
 
+// Calculates the number of safe reports using the Problem Dampener.
 func calculateSafeReportsWithProblemDampener(reports [][]int) int {
 	safeReports := 0
 	for _, report := range reports {
-		reportIsSafe, badLevelIndex := checkIfReportIsSafe(report)
-		if reportIsSafe {
+		// Check if the report is already safe.
+		if isSafe(report) {
 			safeReports++
 			continue
 		}
-		if badLevelIndex == -1 {
-			continue
-		}
-		// Remove the bad level and check if the report is safe
-		report = append(report[:badLevelIndex], report[badLevelIndex+1:]...)
-		reportIsSafe, _ = checkIfReportIsSafe(report)
-		if reportIsSafe {
-			safeReports++
+
+		// Try removing each level and recheck safety.
+		for i := 0; i < len(report); i++ {
+			newReport := append([]int{}, report[:i]...)
+			newReport = append(newReport, report[i+1:]...)
+			if isSafe(newReport) {
+				safeReports++
+				break
+			}
 		}
 	}
 	return safeReports
 }
 
+// Calculates the number of safe reports without the Problem Dampener.
 func calculateSafeReports(reports [][]int) int {
 	safeReports := 0
 	for _, report := range reports {
-		reportIsSafe, _ := checkIfReportIsSafe(report)
-		if reportIsSafe {
+		if isSafe(report) {
 			safeReports++
-			continue
 		}
 	}
 	return safeReports
@@ -84,8 +89,12 @@ func calculateSafeReports(reports [][]int) int {
 
 func main() {
 	reports := parseInputAndCreateReports(inputFile)
+
+	// Safe reports without the Problem Dampener.
 	safeReports := calculateSafeReports(reports)
 	fmt.Printf("The amount of safe reports is: %d\n", safeReports)
+
+	// Safe reports with the Problem Dampener.
 	safeReportsWithProblemDampener := calculateSafeReportsWithProblemDampener(reports)
 	fmt.Printf("The amount of safe reports with the problem dampener is: %d\n", safeReportsWithProblemDampener)
 }
